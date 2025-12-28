@@ -2,34 +2,60 @@ import { useState } from "react";
 import Home from "./pages/Home";
 import Report from "./pages/Report";
 import Dashboard from "./pages/Dashboard";
-import initialIncidents from "./data/mockIncidents";
 
 function App() {
   const [page, setPage] = useState("home");
-  const [incidents, setIncidents] = useState(initialIncidents);
 
-  // ➕ Add new incident
-  const addIncident = (incident) => {
-    setIncidents((prev) => [
-      {
-        id: Date.now(),
-        status: "Reported",
-        verified: false,
-        timestamp: new Date().toISOString(),
-        ...incident,
-      },
-      ...prev,
-    ]);
-    setPage("home");
+  /* ===========================
+     🔥 REPORT INCIDENT (POST)
+     =========================== */
+  const handleReportIncident = async (incident) => {
+    try {
+      const res = await fetch(
+        "https://real-time-incident-reporting.onrender.com/api/incidents",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(incident),
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to report incident");
+
+      alert("Incident reported successfully");
+      setPage("dashboard");
+    } catch (err) {
+      console.error(err);
+      alert("Error reporting incident");
+    }
   };
 
-  // 🛠️ Admin update
-  const updateIncident = (id, updates) => {
-    setIncidents((prev) =>
-      prev.map((incident) =>
-        incident.id === id ? { ...incident, ...updates } : incident
-      )
-    );
+  /* ===========================
+     🛠️ ADMIN UPDATE (PATCH)
+     =========================== */
+  const handleUpdateIncident = async (id, updates) => {
+    try {
+      const res = await fetch(
+        `https://real-time-incident-reporting.onrender.com/api/incidents/${id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(updates),
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to update incident");
+
+      alert("Incident updated");
+      setPage("dashboard");
+    } catch (err) {
+      console.error(err);
+      alert("Error updating incident");
+    }
   };
 
   const navItems = [
@@ -41,22 +67,21 @@ function App() {
 
   const renderPage = () => {
     if (page === "report")
-      return <Report onNavigate={setPage} onSubmit={addIncident} />;
+      return <Report onNavigate={setPage} onSubmit={handleReportIncident} />;
 
     if (page === "dashboard")
-      return <Dashboard incidents={incidents} onNavigate={setPage} />;
+      return <Dashboard onNavigate={setPage} />;
 
     if (page === "admin")
       return (
         <Dashboard
-          incidents={incidents}
           onNavigate={setPage}
           isAdmin
-          onUpdateIncident={updateIncident}
+          onUpdateIncident={handleUpdateIncident}
         />
       );
 
-    return <Home incidents={incidents} onNavigate={setPage} />;
+    return <Home onNavigate={setPage} />;
   };
 
   const isFullScreenPage = ["dashboard", "report", "admin"].includes(page);
@@ -87,15 +112,21 @@ function App() {
         )}
       </main>
 
+      {/* 🔧 FIX GREY BACKGROUND ISSUE */}
       <style>{`
-        /* ✅ FINAL, CORRECT APP WRAPPER */
+        html, body {
+          margin: 0;
+          padding: 0;
+          background: #020617;
+        }
+
         .app-wrapper {
           min-height: 100vh;
           width: 100vw;
           overflow-x: hidden;
           background: #020617;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          color: #e2e8f0;
+          color: #e5e7eb;
+          font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
 
         .top-nav {
@@ -109,7 +140,7 @@ function App() {
           justify-content: space-between;
           position: sticky;
           top: 0;
-          z-index: 50;
+          z-index: 100;
         }
 
         .nav-brand {
@@ -147,39 +178,11 @@ function App() {
 
         .main-content {
           width: 100%;
-          padding: 2rem 1rem;
-          background: #020617;
+          background: transparent;
         }
 
         .main-content.no-padding {
           padding: 0;
-        }
-
-        .page-container {
-          max-width: 1200px;
-          margin: 0 auto;
-          animation: fadeInUp 0.3s ease-out;
-          background: rgba(30, 41, 59, 0.3);
-          border-radius: 1rem;
-          padding: 2rem;
-          border: 1px solid rgba(148, 163, 184, 0.1);
-          backdrop-filter: blur(8px);
-        }
-
-        .full-page {
-          width: 100%;
-          animation: fadeInUp 0.3s ease-out;
-        }
-
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
         }
       `}</style>
     </div>

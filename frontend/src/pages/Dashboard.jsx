@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import IncidentCard from "../components/IncidentCard";
 import FilterBar from "../components/FilterBar";
 
@@ -16,15 +16,33 @@ const userTheme = {
 };
 
 const Dashboard = ({
-  incidents = [],
   onNavigate,
   isAdmin = false,
   onUpdateIncident,
 }) => {
+  /* 🔥 REAL DATA STATE */
+  const [incidents, setIncidents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  /* 🔥 FILTER STATE */
   const [filters, setFilters] = useState({
     type: "",
     status: "",
   });
+
+  /* 🔥 FETCH FROM UTKARSH BACKEND */
+  useEffect(() => {
+    fetch("https://real-time-incident-reporting.onrender.com/api/incidents")
+      .then((res) => res.json())
+      .then((data) => {
+        setIncidents(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching incidents:", err);
+        setLoading(false);
+      });
+  }, []);
 
   const handleFilter = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -36,11 +54,20 @@ const Dashboard = ({
     return true;
   });
 
+  /* 🔄 LOADING STATE */
+  if (loading) {
+    return (
+      <div style={{ padding: "40px", color: "#94a3b8" }}>
+        Loading incidents...
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
         position: "fixed",
-        top: "64px", // navbar height
+        top: "64px",
         left: 0,
         right: 0,
         bottom: 0,
